@@ -1,5 +1,6 @@
 import classnames from "classnames";
 import React from "react";
+import Loader from "./Loader";
 
 const TitleCard: React.FC = () => {
 
@@ -49,7 +50,7 @@ const TitleCard: React.FC = () => {
           </h1>
         </div>
           </div>
-          
+         <Loader/> 
     </>
   );
 };
