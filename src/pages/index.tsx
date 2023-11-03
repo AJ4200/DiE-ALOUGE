@@ -8,7 +8,7 @@ const Home = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       router.push("/Homepage"); // Replace "/homepage" with the actual path to your Homepage component
-    }, 36000); // 36 seconds in milliseconds
+    }, 35000); // 35 seconds in milliseconds
 
     return () => clearTimeout(timeout); // Clear the timeout when the component unmounts
   }, [router]);
