@@ -12,12 +12,18 @@ interface Props {
 
 export const Chat: FC<Props> = ({ messages, loading, onSend }) => {
   return (
-    <div className="flex flex-col rounded-lg px-2 sm:p-4 sm:border border-neutral-300">
+    <div
+      className="jankyborderchat flex flex-col rounded-lg px-2 sm:p-4 border-neutral-300"
+      style={{
+        backgroundImage:
+          "url('https://th.bing.com/th/id/OIG.CW9oSsrUB8jYBUJC0jKV?pid=ImgGn')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       {messages.map((message, index) => (
-        <div
-          key={index}
-          className="my-1 sm:my-1.5"
-        >
+        <div key={index} className="my-1 sm:my-1.5">
           <ChatMessage message={message} />
         </div>
       ))}

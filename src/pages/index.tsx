@@ -1,11 +1,23 @@
+import { useEffect } from "react";
+import { useRouter } from "next/router";
 import TitleCard from "@/components/Splash/TitleCard";
 
-export default function Home() {
- 
+const Home = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      router.push("/Homepage"); // Replace "/homepage" with the actual path to your Homepage component
+    }, 36000); // 36 seconds in milliseconds
+
+    return () => clearTimeout(timeout); // Clear the timeout when the component unmounts
+  }, [router]);
 
   return (
     <>
-    <TitleCard/>
+      <TitleCard />
     </>
   );
-}
+};
+
+export default Home;

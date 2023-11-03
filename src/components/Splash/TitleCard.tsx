@@ -5,7 +5,8 @@ import Loader from "./Loader";
 const TitleCard: React.FC = () => {
 
   return (
-    <>
+      <>
+          
       <div className={classnames("text-red-900","morphing")}  >
         <div className="word">
           <h1 className="glitch">

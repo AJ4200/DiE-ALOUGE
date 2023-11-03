@@ -26,7 +26,8 @@ body {
     rgb(var(--background-start-rgb));
       font-family: "Curse", sans-serif;
       width: 100vw;
-      
+      overflow: hidden;
+      text-shadow: #e0e0e0 0.2px 0.2px 0;
 }
 @font-face {
   font-family: 'Die';
@@ -35,4 +36,17 @@ body {
 @font-face {
   font-family: 'Curse';
   src: url('/fonts/Gypsy Curse.ttf') format('truetype');
+}
+
+.jankyborder{
+    border-top-left-radius: 37px 140px;
+  border-top-right-radius: 23px 130px;
+  border-bottom-left-radius: 110px 19px;
+  border-bottom-right-radius: 120px 24px;
+}
+.jankyborderchat{
+    border-bottom-left-radius: 37px 140px;
+  border-bottom-right-radius: 23px 130px;
+  border-top-left-radius: 110px 19px;
+  border-top-right-radius: 120px 24px;
 }

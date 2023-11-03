@@ -1,5 +1,6 @@
 import { Message } from "@/types";
 import { IconArrowUp } from "@tabler/icons-react";
+import classnames from "classnames";
 import { FC, KeyboardEvent, useEffect, useRef, useState } from "react";
 
 interface Props {
@@ -48,7 +49,7 @@ export const ChatInput: FC<Props> = ({ onSend }) => {
     <div className="relative">
       <textarea
         ref={textareaRef}
-        className="min-h-[44px] rounded-lg pl-4 pr-12 py-2 w-full focus:outline-none focus:ring-1 focus:ring-neutral-300 border-2 border-neutral-200"
+        className={classnames("jankyborderchat bg-inherit backdrop-blur-lg","min-h-[44px] pl-4 pr-12 py-2 w-full focus:outline-none focus:ring-1 focus:ring-red-800 border-2 border-red-900")}
         style={{ resize: "none" }}
         placeholder="Type a message..."
         value={content}
@@ -58,7 +59,7 @@ export const ChatInput: FC<Props> = ({ onSend }) => {
       />
 
       <button onClick={() => handleSend()}>
-        <IconArrowUp className="absolute right-2 bottom-3 h-8 w-8 hover:cursor-pointer rounded-full p-1 bg-blue-500 text-white hover:opacity-80" />
+        <IconArrowUp className="absolute right-2 bottom-3 h-8 w-8 hover:cursor-pointer rounded-full p-1 bg-red-500/20 rotate-45 text-white hover:opacity-80" />
       </button>
     </div>
   );
