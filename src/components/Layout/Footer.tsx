@@ -16,7 +16,7 @@ const Footer: FC = () => {
 
       <div className="flex items-center ml-2 space-x-1">
         <motion.a
-          href="https://github.com/yourgithubusername"
+          href="https://github.com/aj4200"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.1 }}
@@ -25,7 +25,7 @@ const Footer: FC = () => {
         </motion.a>
 
         <motion.a
-          href="https://linkedin.com/in/yourlinkedinusername"
+          href="https://www.linkedin.com/in/abel-majadibodu-5a0583193/"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.1 }}

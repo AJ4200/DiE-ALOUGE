@@ -24,7 +24,7 @@ const Navbar: FC = () => {
 
       <div className="flex items-center space-x-4">
         <motion.a
-          href="https://github.com/yourgithubusername"
+          href="https://github.com/aj4200"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.1 }}
@@ -33,7 +33,7 @@ const Navbar: FC = () => {
         </motion.a>
 
         <motion.a
-          href="https://linkedin.com/in/yourlinkedinusername"
+          href="https://www.linkedin.com/in/abel-majadibodu-5a0583193/"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.1 }}

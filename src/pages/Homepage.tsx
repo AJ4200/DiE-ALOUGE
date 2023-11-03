@@ -84,7 +84,7 @@ export default function Homepage() {
     setMessages([
       {
         role: "assistant",
-        content: `Hi there! I'm Chatbot UI, an AI assistant. I can help you with things like answering questions, providing information, and helping with tasks. How can I help you?`,
+        content: `Greetings Visitor,I am The SilentHarbinger of DiE-alouge. Whether to live or whether to die, it shall be decided by the dialouge of you and I, what is thy alias?`,
       },
     ]);
   }, []);
@@ -109,6 +109,7 @@ export default function Homepage() {
         </div>
         <Footer />
       </div>
+      <audio autoPlay src="assets/sounds/bgm.mp3" />
     </>
   );
 }
