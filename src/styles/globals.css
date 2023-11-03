@@ -24,4 +24,15 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+      font-family: "Curse", sans-serif;
+      width: 100vw;
+      
+}
+@font-face {
+  font-family: 'Die';
+  src: url('/fonts/DIEDIEDI.TTF') format('truetype');
+}
+@font-face {
+  font-family: 'Curse';
+  src: url('/fonts/Gypsy Curse.ttf') format('truetype');
 }

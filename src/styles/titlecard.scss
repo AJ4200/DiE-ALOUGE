@@ -1,0 +1,56 @@
+
+/* Reset styles */
+*,
+*::before,
+*::after {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+::selection {
+  background: color(display-p3 0.35 0.21 0.75);
+}
+
+/* Variables */
+$speed: 37s;
+$wordCount: 6;
+
+/* Morphing container */
+.morphing {
+  position: relative;
+  font-size: 18vw;
+  min-height: 100vh;
+  filter: contrast(25) blur(1px);
+  text-shadow: 2px 4px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Word animation */
+.word {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: word $speed infinite ease-in-out;
+
+  /* Animation delay for each word */
+  @for $i from 0 to $wordCount {
+    &:nth-child(#{$i + 1}) {
+      animation-delay: ($speed / ($wordCount + 1) * $i) - $speed;
+    }
+  }
+
+  /* Keyframes for word animation */
+  @keyframes word {
+    0%,
+    5%,
+    100% {
+      filter: blur(0px);
+      opacity: 1;
+    }
+    20%,
+    80% {
+      filter: blur(1em);
+      opacity: 0;
+    }
+  }
+}
