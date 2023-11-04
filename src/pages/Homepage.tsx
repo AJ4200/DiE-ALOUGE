@@ -1,6 +1,7 @@
 import { Chat } from "@/components/Chat/Chat";
 import  Footer  from "@/components/Layout/Footer";
 import Navbar from "@/components/Layout/Navbar";
+import Run from "@/components/Splash/Run";
 import { Message } from "@/types";
 import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
@@ -97,10 +98,9 @@ export default function Homepage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-   <Navbar />
+          <Navbar />
+          <Run />
       <div className="flex flex-col h-screen">
-     
-
         <div className="flex-1 overflow-auto sm:px-10 pb-4 sm:pb-10">
           <div className="max-w-[800px] mx-auto mt-4 sm:mt-12">
             <Chat messages={messages} loading={loading} onSend={handleSend} />
@@ -109,7 +109,8 @@ export default function Homepage() {
         </div>
         <Footer />
       </div>
-      <audio autoPlay loop src="assets/sounds/bgm.mp3" />
+          <audio autoPlay loop src="assets/sounds/bgm.mp3" />
+          
     </>
   );
 }
