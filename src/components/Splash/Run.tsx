@@ -19,10 +19,6 @@ const Run: React.FC = () => {
     };
   }, []);
 
-  const handleButtonClick = () => {
-    setIsVisible(true);
-  };
-
   return (
     <>
       {isVisible && (
