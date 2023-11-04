@@ -2,11 +2,13 @@ import { FC } from "react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { motion } from "framer-motion";
 import AccessibilityToggle from "../AccesibilityToggle";
+import classnames from "classnames";
 
 const Navbar: FC = () => {
   return (
     <motion.div
-      className="flex h-[50px] sm:h-[60px] border-b border-red-700 py-2 px-2 sm:px-8 items-center justify-between"
+      className={classnames("flex h-[50px] sm:h-[60px] border-b border-red-700 py-2 px-2 sm:px-8 items-center justify-between",
+      "fixed w-full")}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}

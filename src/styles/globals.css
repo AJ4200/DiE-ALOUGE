@@ -45,3 +45,22 @@ body {
   border-top-left-radius: 110px 19px;
   border-top-right-radius: 120px 24px;
 }
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 0.7rem; 
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background-color: transparent;
+
+  
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: maroon;   
+  border-radius: 1rem; 
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: red; 
+}

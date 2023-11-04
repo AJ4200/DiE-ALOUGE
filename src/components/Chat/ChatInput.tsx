@@ -77,10 +77,12 @@ export const ChatInput: FC<Props> = ({ onSend }) => {
       <textarea
         ref={textareaRef}
         className={classnames(
-          "jankyborderchat bg-inherit backdrop-blur-lg text-red-700",
+          "jankyborderchat bg-inherit backdrop-blur-lg text-red-700  bottom-0 ",
           "min-h-[44px] pl-4 pr-12 py-2 w-full focus:outline-none focus:ring-1 focus:ring-red-800 border-2 border-red-900"
         )}
-        style={{ resize: "none" }}
+        style={{
+          resize: "none",
+        position: "absolute"}}
         placeholder="Speak to it..."
         value={content}
         rows={1}
