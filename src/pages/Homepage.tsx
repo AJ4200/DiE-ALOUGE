@@ -109,7 +109,7 @@ export default function Homepage() {
         </div>
         <Footer />
       </div>
-      <audio autoPlay src="assets/sounds/bgm.mp3" />
+      <audio autoPlay loop src="assets/sounds/bgm.mp3" />
     </>
   );
 }

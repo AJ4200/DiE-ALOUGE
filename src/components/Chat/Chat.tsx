@@ -13,7 +13,7 @@ interface Props {
 export const Chat: FC<Props> = ({ messages, loading, onSend }) => {
   return (
     <div
-      className="jankyborderchat flex flex-col rounded-lg px-2 sm:p-4 border-neutral-300"
+      className="jankyborderchat flex flex-col rounded-lg px-2 sm:p-4 border-neutral-300 fixed left-0 right-0"
       style={{
         backgroundImage:
           "url('https://th.bing.com/th/id/OIG.CW9oSsrUB8jYBUJC0jKV?pid=ImgGn')",
