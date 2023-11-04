@@ -9,7 +9,7 @@ const AccessibilityToggle = () => {
     setIsSansMode((prevMode) => !prevMode);
 
     // Toggle the font family based on the current mode
-    document.body.style.fontFamily = isSansMode ? "" : "sans-serif";
+      document.body.style.fontFamily = isSansMode ? "" : "sans-serif";
   };
 
   return (

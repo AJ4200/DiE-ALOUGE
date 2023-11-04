@@ -77,11 +77,11 @@ export const ChatInput: FC<Props> = ({ onSend }) => {
       <textarea
         ref={textareaRef}
         className={classnames(
-          "jankyborderchat bg-inherit backdrop-blur-lg",
+          "jankyborderchat bg-inherit backdrop-blur-lg text-red-700",
           "min-h-[44px] pl-4 pr-12 py-2 w-full focus:outline-none focus:ring-1 focus:ring-red-800 border-2 border-red-900"
         )}
         style={{ resize: "none" }}
-        placeholder="Type a message..."
+        placeholder="Speak to it..."
         value={content}
         rows={1}
         onChange={handleChange}
@@ -89,7 +89,7 @@ export const ChatInput: FC<Props> = ({ onSend }) => {
       />
 
       <button onClick={() => handleSend()}>
-        <IconArrowUp className="absolute right-2 bottom-3 h-8 w-8 hover:cursor-pointer rounded-full p-1 bg-red-500/20 rotate-45 text-white hover:opacity-80" />
+        <IconArrowUp className="absolute right-2 bottom-3 h-8 w-8 hover:cursor-pointer rounded-full p-1 bg-red-500/20 rotate-45 text-red-700 hover:opacity-80" />
       </button>
 
       <ChatModal isOpen={isModalOpen} onClose={handleModalClose}>

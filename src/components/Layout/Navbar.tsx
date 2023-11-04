@@ -1,6 +1,7 @@
 import { FC } from "react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { motion } from "framer-motion";
+import AccessibilityToggle from "../AccesibilityToggle";
 
 const Navbar: FC = () => {
   return (
@@ -41,6 +42,7 @@ const Navbar: FC = () => {
           <FaLinkedin className="text-red-800 text-2xl hover:opacity-50" />
         </motion.a>
       </div>
+      <AccessibilityToggle/>
     </motion.div>
   );
 };
