@@ -1,5 +1,5 @@
 import { Message, OpenAIModel } from "@/types";
-import { createParser, ParsedEvent, ReconnectInterval } from "eventsource-parser";
+import { createParser, type EventSourceMessage } from "eventsource-parser";
 
 export const OpenAIStream = async (messages: Message[]) => {
   const encoder = new TextEncoder();
@@ -32,8 +32,8 @@ export const OpenAIStream = async (messages: Message[]) => {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const onParse = (event: ParsedEvent | ReconnectInterval) => {
-        if (event.type === "event") {
+      const parser = createParser({
+        onEvent(event: EventSourceMessage) {
           const data = event.data;
 
           if (data === "[DONE]") {
@@ -43,21 +43,31 @@ export const OpenAIStream = async (messages: Message[]) => {
 
           try {
             const json = JSON.parse(data);
-            const text = json.choices[0].delta.content;
-            const queue = encoder.encode(text);
-            controller.enqueue(queue);
-          } catch (e) {
-            controller.error(e);
+            const text = json.choices?.[0]?.delta?.content ?? "";
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+            }
+          } catch (error) {
+            controller.error(error);
           }
-        }
-      };
+        },
+        onError(error) {
+          controller.error(error);
+        },
+      });
 
-      const parser = createParser(onParse);
-
-      for await (const chunk of res.body as any) {
-        parser.feed(decoder.decode(chunk));
+      const body = res.body;
+      if (!body) {
+        controller.close();
+        return;
       }
-    }
+
+      for await (const chunk of body) {
+        parser.feed(decoder.decode(chunk, { stream: true }));
+      }
+
+      parser.feed(decoder.decode());
+    },
   });
 
   return stream;

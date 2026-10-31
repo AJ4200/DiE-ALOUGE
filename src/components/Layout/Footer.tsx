@@ -11,6 +11,7 @@ const Footer: FC = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      style={{ fontFamily: "Curse" }}
     >
       <div className="text-red-800 ">
         © 2023 DiE-ALOUGE. All rights reserved.

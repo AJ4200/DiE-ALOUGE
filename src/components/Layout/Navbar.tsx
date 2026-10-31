@@ -12,13 +12,13 @@ const Navbar: FC = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      style={{ fontFamily: "Curse" }}
     >
       <div className="font-bold text-4xl flex items-center">
         <a className="ml-2 text-red-800 hover:opacity-50" href="/">
           DiE-ALOUGE
           <span
             className="font-light text-xs text-red-800"
-            style={{ fontFamily: "Die" }}
           >
             Alpha
           </span>

@@ -20,13 +20,11 @@ export const Chat: FC<Props> = ({ messages, loading, onSend }) => {
       )}
       style={{
         backgroundImage:
-          "url('https://th.bing.com/th/id/OIG.CW9oSsrUB8jYBUJC0jKV?pid=ImgGn')",
+          "url('/assets/backgrounds/harbinger-crypt.svg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        borderImage:
-          "url('https://th.bing.com/th/id/OIG.3jCC7osYT8HaQ_S8OGFl?pid=ImgGn')",
-          borderImageRepeat: "round"
+        border: "8px solid #781f28"
       }}
     >
       {messages.map((message, index) => (

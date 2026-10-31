@@ -12,13 +12,13 @@ const Loader: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{
             duration: 1,
-            yoyo: Infinity,
+            repeat: Infinity,
             ease: "easeInOut",
           }}
         >
           <FaSkull size={24} />
         </motion.span>
-        <span className="text-red-700" style={{ fontFamily: "Die" }}>
+        <span className="text-red-700" style={{ fontFamily: "Curse" }}>
           Connecting...
         </span>
       </div>
