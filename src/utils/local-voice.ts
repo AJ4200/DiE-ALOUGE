@@ -21,6 +21,34 @@ const ttsListeners = new Set<() => void>();
 const ttsCallbacks = new Set<ModelProgressCallback>();
 const ttsFiles = new Map<string, { loaded: number; total: number }>();
 
+type TransformersEnv = typeof import("@huggingface/transformers")["env"];
+let storagePersistRequested = false;
+
+// Keep model files in the Cache API across refreshes and run ONNX off the main thread.
+function configureTransformers(env: TransformersEnv) {
+  env.useBrowserCache = typeof caches !== "undefined";
+  env.allowLocalModels = false;
+  if (env.backends.onnx.wasm) env.backends.onnx.wasm.proxy = true;
+  if (!storagePersistRequested && typeof navigator !== "undefined" && navigator.storage?.persist) {
+    storagePersistRequested = true;
+    void navigator.storage.persist().catch(() => undefined);
+  }
+}
+
+// Download progress fires per chunk; forward at most one update per interval per file.
+function throttleProgress<T extends { status: string; file?: string }>(handler: (progress: T) => void, intervalMs = 120) {
+  const lastSent = new Map<string, number>();
+  return (progress: T) => {
+    if (progress.status === "progress") {
+      const key = progress.file ?? "";
+      const now = performance.now();
+      if (now - (lastSent.get(key) ?? 0) < intervalMs) return;
+      lastSent.set(key, now);
+    }
+    handler(progress);
+  };
+}
+
 function setTtsState(next: LocalTtsState) {
   ttsState = next;
   ttsListeners.forEach((listener) => listener());
@@ -44,14 +72,14 @@ export function loadLocalTts(onProgress?: ModelProgressCallback): Promise<Kokoro
     setTtsState({ status: "loading", percent: 0 });
     ttsPromise = import("@huggingface/transformers")
       .then(({ env }) => {
-        env.useBrowserCache = typeof caches !== "undefined";
+        configureTransformers(env);
         return import("kokoro-js");
       })
       .then(({ KokoroTTS: Model }) =>
         Model.from_pretrained(ttsModelId, {
           dtype: "q8",
           device: "wasm",
-          progress_callback: (progress) => {
+          progress_callback: throttleProgress((progress) => {
             const report = (update: VoiceModelProgress) => ttsCallbacks.forEach((callback) => callback("voice", update));
             if (progress.status === "progress") {
               ttsFiles.set(progress.file, { loaded: progress.loaded, total: progress.total });
@@ -69,7 +97,7 @@ export function loadLocalTts(onProgress?: ModelProgressCallback): Promise<Kokoro
             } else {
               report({ status: "loading" });
             }
-          },
+          }),
         }),
       )
       .then((tts) => {
@@ -94,10 +122,10 @@ export function loadLocalTts(onProgress?: ModelProgressCallback): Promise<Kokoro
 
 async function createRecognizer(onProgress?: ModelProgressCallback) {
   const { env, pipeline } = await import("@huggingface/transformers");
-  env.useBrowserCache = typeof caches !== "undefined";
+  configureTransformers(env);
   return pipeline("automatic-speech-recognition", asrModelId, {
     dtype: "q8",
-    progress_callback: (progress) => {
+    progress_callback: throttleProgress((progress) => {
       if (progress.status === "progress") {
         onProgress?.("transcription", { status: "download", file: progress.file, progress: progress.progress });
       } else if (progress.status !== "ready") {
@@ -105,7 +133,7 @@ async function createRecognizer(onProgress?: ModelProgressCallback) {
       } else {
         onProgress?.("transcription", { status: "loading" });
       }
-    },
+    }),
   });
 }
 
