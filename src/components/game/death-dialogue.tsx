@@ -1,12 +1,13 @@
 "use client";
 
-import { Accessibility, Cross, Eye, Flame, HeartCrack, Mic, Phone, PhoneCall, PhoneOff, RotateCcw, SendHorizontal, Skull, SlidersHorizontal, Volume2 } from "lucide-react";
-import { FaGithub, FaLinkedin } from "react-icons/fa";
+import { Accessibility, Eye, Flame, HeartCrack, Mic, Phone, PhoneCall, PhoneOff, RotateCcw, SendHorizontal, Skull, SlidersHorizontal, Volume2 } from "lucide-react";
+import { FaGithub } from "react-icons/fa";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { getLocalTtsState, loadLocalRecognizer, loadLocalTts, subscribeLocalTts, transcribeLocalAudio, type LocalTtsState, type VoiceModel, type VoiceModelProgress } from "@/utils/local-voice";
 
 type Message = { role: "assistant" | "user"; content: string };
 type ChatMode = "text" | "live";
+type MicStatus = "unknown" | "requesting" | "granted" | "denied" | "unavailable";
 type ModelSetupState = Omit<VoiceModelProgress, "status"> & { status: VoiceModelProgress["status"] | "waiting" | "ready" };
 type VoiceSetupState = { open: boolean; loading: boolean; error: string; voice: ModelSetupState; transcription: ModelSetupState };
 type AudioVolumes = { master: number; ambience: number; heartbeat: number; voice: number };
@@ -37,6 +38,29 @@ const titleWords = ["Thread", "Survive", "Escape", "Death", "In", "DiE-alogue!"]
 const dangerFor = (reply: string, turn: number) => Math.min(24, 7 + (turn % 3) * 3 + (/run|fight|refuse|weapon|fire|door|hide|lie|trick/i.test(reply) ? 5 : 0));
 function GlitchWord({ children }: { children: string }) { return <h1 className="glitch"><span aria-hidden="true">{children}</span>{children}<span aria-hidden="true">{children}</span></h1>; }
 
+function waitForAudioData(audio: HTMLAudioElement | null, label: string) {
+  if (!audio) return Promise.reject(new Error(`${label} audio is unavailable.`));
+  if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) return Promise.resolve();
+
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      audio.removeEventListener("canplay", onCanPlay);
+      audio.removeEventListener("error", onError);
+    };
+    const onCanPlay = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error(`${label} audio failed to load.`));
+    };
+    audio.addEventListener("canplay", onCanPlay, { once: true });
+    audio.addEventListener("error", onError, { once: true });
+    audio.load();
+  });
+}
+
 function ReadableFontToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
     <button
@@ -48,7 +72,7 @@ function ReadableFontToggle({ enabled, onToggle }: { enabled: boolean; onToggle:
       title={enabled ? "Use original display fonts" : "Switch to readable fonts"}
     >
       <Accessibility size={19} aria-hidden="true" />
-      <span>{enabled ? "READABLE TYPE ON" : "READABLE TYPE"}</span>
+      <span>READABLE</span>
     </button>
   );
 }
@@ -138,7 +162,9 @@ function ModelDownloadRow({ label, model }: { label: string; model: ModelSetupSt
 
 export function DeathDialogue() {
   const [splash, setSplash] = useState(true); const [messages, setMessages] = useState<Message[]>([opening]);
+  const [assetsReady, setAssetsReady] = useState(false); const [assetLoadError, setAssetLoadError] = useState(""); const [assetLoadAttempt, setAssetLoadAttempt] = useState(0);
   const [selectedMode, setSelectedMode] = useState<ChatMode | null>(null);
+  const [micStatus, setMicStatus] = useState<MicStatus>("unknown");
   const [readableFont, setReadableFont] = useState(false);
   const [input, setInput] = useState(""); const [vitality, setVitality] = useState(100); const [turn, setTurn] = useState(0);
   const [pending, setPending] = useState(false); const [volumes, setVolumes] = useState<AudioVolumes>(defaultAudioVolumes); const [volumeMenuOpen, setVolumeMenuOpen] = useState(false); const [audioError, setAudioError] = useState(""); const [ended, setEnded] = useState(false); const [watching, setWatching] = useState(false); const [conversationStarted, setConversationStarted] = useState(false); const [privacyOpen, setPrivacyOpen] = useState(false); const [error, setError] = useState("");
@@ -364,7 +390,7 @@ export function DeathDialogue() {
     };
     void speakChunks();
   }, []);
-  const syncAudio = (isSplash: boolean, levels: AudioVolumes) => {
+  const syncAudio = (isSplash: boolean, levels: AudioVolumes, enabled: boolean) => {
     const tracks = [
       { element: heartbeat.current, active: isSplash, volume: levels.heartbeat },
       { element: ambience.current, active: !isSplash, volume: levels.ambience },
@@ -373,7 +399,7 @@ export function DeathDialogue() {
     tracks.forEach(({ element, active, volume }) => {
       if (!element) return;
       const gain = levels.master * volume;
-      if (!active || gain <= 0) {
+      if (!enabled || !active || gain <= 0) {
         element.pause();
         element.muted = true;
         return;
@@ -395,8 +421,40 @@ export function DeathDialogue() {
     }
   };
   useEffect(() => {
-    syncAudio(splash, volumes);
-  }, [splash, volumes]);
+    syncAudio(splash, volumes, assetsReady);
+  }, [assetsReady, splash, volumes]);
+  useEffect(() => {
+    let cancelled = false;
+    const loadAssets = async () => {
+      try {
+        const [dieFont, curseFont] = await Promise.all([
+          document.fonts.load('16px "Die"'),
+          document.fonts.load('16px "Curse"'),
+        ]);
+        if (!dieFont.length || !curseFont.length) throw new Error("Display fonts failed to load.");
+
+        const background = new Image();
+        background.src = "/assets/backgrounds/harbinger-crypt.svg";
+        await Promise.all([
+          background.decode(),
+          waitForAudioData(heartbeat.current, "Heartbeat"),
+          waitForAudioData(ambience.current, "Ambience"),
+        ]);
+        if (!cancelled) {
+          setAssetLoadError("");
+          setAssetsReady(true);
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setAssetLoadError(cause instanceof Error ? cause.message : "The opening assets could not be loaded.");
+        }
+      }
+    };
+    void loadAssets();
+    return () => {
+      cancelled = true;
+    };
+  }, [assetLoadAttempt]);
   useEffect(() => {
     if (!volumeMenuOpen) return;
     const closeOnPointerDown = (event: PointerEvent) => {
@@ -424,14 +482,14 @@ export function DeathDialogue() {
     return () => document.removeEventListener("keydown", closeOnKeyDown);
   }, [privacyOpen]);
   useEffect(() => {
-    if (!splash) return;
+    if (!splash || !assetsReady) return;
     const timer = window.setTimeout(() => {
       setSplash(false);
     }, 25000);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [splash]);
+  }, [assetsReady, splash]);
   useEffect(() => {
     if (splash || !selectedMode || !conversationStarted || ended) return;
 
@@ -470,7 +528,6 @@ export function DeathDialogue() {
     stopSpeechSources();
     void audioContextRef.current?.close();
   }, []);
-  const enter = () => { setSplash(false); syncAudio(false, volumes); };
   const selectMode = (mode: ChatMode) => {
     selectedModeRef.current = mode;
     setSelectedMode(mode);
@@ -504,8 +561,33 @@ export function DeathDialogue() {
     } catch (cause) {
       setError(cause instanceof Error ? `Audio playback is unavailable: ${cause.message}` : "Audio playback is unavailable.");
     }
+    void requestMicrophone();
     void prepareLiveConversation();
   };
+  async function requestMicrophone() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicStatus("unavailable");
+      return false;
+    }
+    setMicStatus("requesting");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setMicStatus("granted");
+      return true;
+    } catch (cause) {
+      const denied = cause instanceof DOMException && (cause.name === "NotAllowedError" || cause.name === "SecurityError");
+      setMicStatus(denied ? "denied" : "unavailable");
+      return false;
+    }
+  }
+  async function allowMicrophone() {
+    if (!(await requestMicrophone()) || selectedModeRef.current !== "live") return;
+    setError("");
+    liveModeRef.current = true;
+    setLiveMode(true);
+    startListening();
+  }
   async function prepareLiveConversation() {
     const attempt = voiceSetupAttemptRef.current + 1;
     voiceSetupAttemptRef.current = attempt;
@@ -635,6 +717,7 @@ export function DeathDialogue() {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
+      setMicStatus("granted");
       if (!isCurrentRequest()) {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -740,6 +823,7 @@ export function DeathDialogue() {
       if (requestId === captureRequestRef.current) {
         stopListening();
         setVoiceStatus("");
+        if (cause instanceof DOMException && cause.name === "NotAllowedError") setMicStatus("denied");
         const message = cause instanceof DOMException && cause.name === "NotAllowedError"
           ? "Microphone access was denied. Allow microphone access to use local voice."
           : cause instanceof Error
@@ -824,15 +908,19 @@ export function DeathDialogue() {
     event.preventDefault();
     void submitMessage(input);
   }
-  return <main className={`game-shell ${splash ? "is-splash" : "is-entering"} ${!splash && !selectedMode ? "is-mode-picker" : ""} ${selectedMode === "live" ? "is-live-mode" : ""} ${selectedMode === "text" ? "is-text-mode" : ""} ${readableFont ? "accessible-font" : ""}`}>
-    <audio ref={ambience} autoPlay={!splash} muted={splash || volumes.master === 0 || volumes.ambience === 0} loop preload="auto" src="/assets/sounds/bgm.mp3" /><audio ref={heartbeat} autoPlay={splash} muted={!splash || volumes.master === 0 || volumes.heartbeat === 0} loop preload="auto" src="/assets/sounds/heartbeat.mp3" />
-    {splash && <section className="splash-screen"><div className="splash-image" /><div className="morphing">{titleWords.map((word) => <div className="word" key={word}><GlitchWord>{word}</GlitchWord></div>)}</div><div className="splash-loader"><Skull size={26} /><span>CONNECTING TO THE OTHER SIDE...</span></div><div className="splash-accessibility"><ReadableFontToggle enabled={readableFont} onToggle={() => setReadableFont((enabled) => !enabled)} /></div><button className="summon-button" onClick={enter}><Cross size={17} /> ENTER THE DIALOGUE <Cross size={17} /></button></section>}
-    {!splash && <><div className="grave-image" /><div className="grain" aria-hidden="true" />
+  return <main className={`game-shell ${!assetsReady ? "is-preloading" : splash ? "is-splash" : "is-entering"} ${assetsReady && !splash && !selectedMode ? "is-mode-picker" : ""} ${selectedMode === "live" ? "is-live-mode" : ""} ${selectedMode === "text" ? "is-text-mode" : ""} ${readableFont ? "accessible-font" : ""}`}>
+    <audio ref={ambience} muted loop preload="auto" src="/assets/sounds/bgm.mp3" /><audio ref={heartbeat} muted loop preload="auto" src="/assets/sounds/heartbeat.mp3" />
+    {!assetsReady && <section className="asset-preloader" aria-live="polite">
+      {assetLoadError
+        ? <><p role="alert">{assetLoadError}</p><button type="button" onClick={() => { setAssetsReady(false); setAssetLoadError(""); setAssetLoadAttempt((attempt) => attempt + 1); }}>RETRY</button></>
+        : <><span className="asset-preloader-spinner" aria-hidden="true" /><p>PREPARING THE OTHER SIDE...</p></>}
+    </section>}
+    {assetsReady && splash && <section className="splash-screen"><div className="splash-image" /><div className="morphing">{titleWords.map((word) => <div className="word" key={word}>{word === "DiE-alogue!" && <span className="splash-season">SEASON 3</span>}<GlitchWord>{word}</GlitchWord></div>)}</div><div className="splash-loader"><Skull size={26} /><span>CONNECTING TO THE OTHER SIDE...</span></div><div className="splash-accessibility"><ReadableFontToggle enabled={readableFont} onToggle={() => setReadableFont((enabled) => !enabled)} /></div></section>}
+    {assetsReady && !splash && <><div className="grave-image" /><div className="grain" aria-hidden="true" />
       {watching && <div className="watcher" aria-hidden="true"><div className="watch-words"><GlitchWord>They</GlitchWord><GlitchWord>Are</GlitchWord><GlitchWord>Watching</GlitchWord><GlitchWord>You</GlitchWord><GlitchWord>RUN!!!</GlitchWord></div></div>}
       <header className="game-header">
         <div className="brand"><Skull size={26} /><span>DiE-ALOUGE</span><small>VERSION 2.0.0 · THE LAST CONVERSATION</small></div>
         <div className="header-actions">
-          <a href="https://www.linkedin.com/in/abel-majadibodu-5a0583193/" target="_blank" rel="noreferrer" aria-label="LinkedIn"><FaLinkedin size={18} /></a>
           <ReadableFontToggle enabled={readableFont} onToggle={() => setReadableFont((enabled) => !enabled)} />
           <div className="volume-control" ref={volumeControlRef}>
             <button className="icon-button" ref={volumeButtonRef} type="button" onClick={() => setVolumeMenuOpen((open) => !open)} aria-label="Open audio volume controls" aria-expanded={volumeMenuOpen} aria-controls="audio-volume-controls" title="Audio volume controls"><SlidersHorizontal size={19} /></button>
@@ -863,7 +951,8 @@ export function DeathDialogue() {
             <span className="mode-card-title">LIVE CONVERSATION</span>
             <span className="mode-card-copy">Speak naturally. The Harbinger listens, answers aloud, and keeps the conversation flowing.</span>
             <span className="mode-card-cta"><Phone size={15} /> ENTER LIVE MODE</span>
-            <span className="mode-card-note">MICROPHONE REQUIRED · LOCAL MODEL DOWNLOAD</span>
+            <span className="mode-card-note mode-card-mic-note"><Mic size={13} aria-hidden="true" /> YOU MUST ALLOW MICROPHONE ACCESS OR THE HARBINGER CANNOT HEAR YOU</span>
+            <span className="mode-card-note">LOCAL MODEL DOWNLOAD REQUIRED</span>
           </button>
         </div>
       </section> : <>
@@ -900,7 +989,19 @@ export function DeathDialogue() {
           </div>
           <HarbingerSkull speaking={voiceSpeaking} listening={listening} />
           <span className="live-stage-title">THE SILENT HARBINGER</span>
-          <span className="live-stage-status" role="status">{voiceStatus || (liveMode ? voiceSpeaking ? "THREE SOULS SPEAK AS ONE" : pending ? "WEIGHING YOUR WORDS" : transcribing ? "DECIPHERING YOUR WORDS LOCALLY" : listening ? "I AM LISTENING" : "LIVE CHANNEL OPEN" : "THE CHANNEL IS PAUSED")}</span>
+          <span className="live-stage-status" role="status">{voiceStatus || (micStatus === "requesting" ? "WAITING FOR MICROPHONE PERMISSION" : micStatus === "denied" || micStatus === "unavailable" ? "THE HARBINGER CANNOT HEAR YOU" : liveMode ? voiceSpeaking ? "THREE SOULS SPEAK AS ONE" : pending ? "WEIGHING YOUR WORDS" : transcribing ? "DECIPHERING YOUR WORDS LOCALLY" : listening ? "I AM LISTENING" : "LIVE CHANNEL OPEN" : "THE CHANNEL IS PAUSED")}</span>
+          {micStatus !== "granted" && micStatus !== "unknown" && <div className={`mic-required ${micStatus === "requesting" ? "is-requesting" : "is-blocked"}`} role="alert">
+            <Mic size={22} aria-hidden="true" />
+            <div>
+              <strong>{micStatus === "requesting" ? "ALLOW MICROPHONE ACCESS" : micStatus === "denied" ? "MICROPHONE ACCESS BLOCKED" : "NO MICROPHONE FOUND"}</strong>
+              <p>{micStatus === "requesting"
+                ? "Your browser is asking for microphone permission. Choose Allow, otherwise the Harbinger cannot hear you in a live conversation."
+                : micStatus === "denied"
+                  ? "The Harbinger cannot hear you. Click the lock or microphone icon in your browser's address bar, set Microphone to Allow, then press the button below."
+                  : "A working microphone is needed for a live conversation. Connect one, then try again, or switch to text chat."}</p>
+            </div>
+            {micStatus !== "requesting" && <button type="button" onClick={() => void allowMicrophone()}><Mic size={15} aria-hidden="true" /> ALLOW MICROPHONE</button>}
+          </div>}
           <p className="live-caption" aria-live="polite"><strong>{messages[messages.length - 1]?.role === "assistant" ? "HARBINGER" : "YOU"}</strong>{messages[messages.length - 1]?.content}</p>
           {pending && <div className="thinking"><span /><span /><span /> Death considers your words.</div>}
           {error && <p className="error">{error}</p>}
@@ -930,7 +1031,7 @@ export function DeathDialogue() {
       {voiceModel.status === "loading" && <progress className="voice-model-progress" max={100} value={voiceModel.percent} aria-label="Harbinger voice installation progress" />}
     </div>}
     {voiceSetup.open && voiceSetupMinimized && selectedMode === "live" && <div className="voice-notice voice-setup-mini" role="status" aria-live="polite">
-      <div className="voice-notice-heading"><strong>{voiceSetup.loading ? "AWAKENING THE HARBINGER" : "THE VOICE COULD NOT LOAD"}</strong><button type="button" onClick={() => setVoiceSetupMinimized(false)} aria-label="Expand voice setup">▢</button></div>
+      <div className="voice-notice-heading"><strong>{voiceSetup.loading ? "AWAKENING THE HARBINGER" : "THE VOICE COULD NOT LOAD"}</strong><button className="voice-setup-expand" type="button" onClick={() => setVoiceSetupMinimized(false)} aria-label="Expand voice setup">▢ EXPAND</button></div>
       <div className="voice-model-list">
         <ModelDownloadRow label="HARBINGER VOICE · KOKORO" model={voiceSetup.voice} />
         <ModelDownloadRow label="LOCAL LISTENING · WHISPER" model={voiceSetup.transcription} />
@@ -938,7 +1039,7 @@ export function DeathDialogue() {
     </div>}
     {voiceSetup.open && !voiceSetupMinimized && selectedMode === "live" && <div className="voice-setup-overlay" role="dialog" aria-modal="true" aria-labelledby="voice-setup-title" aria-describedby="voice-setup-description" aria-busy={voiceSetup.loading}>
       <section className="voice-setup-card">
-        <button className="voice-setup-minimize" type="button" onClick={() => setVoiceSetupMinimized(true)} aria-label="Minimize voice setup to the corner">–</button>
+        <button className="voice-setup-minimize" type="button" onClick={() => setVoiceSetupMinimized(true)} aria-label="Minimize voice setup to the corner">– MINIMIZE</button>
         <span className="eyebrow">{voiceSetup.loading ? "PREPARING THE VOICE" : "VOICE SETUP INTERRUPTED"}</span>
         <h2 id="voice-setup-title">{voiceSetup.loading ? "AWAKENING THE HARBINGER" : "THE VOICE COULD NOT LOAD"}</h2>
         <p id="voice-setup-description">{voiceSetup.loading
