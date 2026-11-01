@@ -7,7 +7,7 @@ import { getLocalTtsState, loadLocalRecognizer, loadLocalTts, subscribeLocalTts,
 
 type Message = { role: "assistant" | "user"; content: string };
 type ChatMode = "text" | "live";
-type MicStatus = "unknown" | "requesting" | "granted" | "denied" | "unavailable";
+type MicStatus = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "insecure";
 type ModelSetupState = Omit<VoiceModelProgress, "status"> & { status: VoiceModelProgress["status"] | "waiting" | "ready" };
 type VoiceSetupState = { open: boolean; loading: boolean; error: string; voice: ModelSetupState; transcription: ModelSetupState };
 type AudioVolumes = { master: number; ambience: number; heartbeat: number; voice: number };
@@ -561,10 +561,18 @@ export function DeathDialogue() {
     } catch (cause) {
       setError(cause instanceof Error ? `Audio playback is unavailable: ${cause.message}` : "Audio playback is unavailable.");
     }
-    void requestMicrophone();
-    void prepareLiveConversation();
+    updateVolume("ambience", 0.3);
+    void startLiveConversation();
   };
+  async function startLiveConversation() {
+    // Ask for the microphone first so the browser prompt is not delayed by model loading.
+    if (await requestMicrophone()) void prepareLiveConversation();
+  }
   async function requestMicrophone() {
+    if (!window.isSecureContext) {
+      setMicStatus("insecure");
+      return false;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setMicStatus("unavailable");
       return false;
@@ -586,7 +594,7 @@ export function DeathDialogue() {
     setError("");
     liveModeRef.current = true;
     setLiveMode(true);
-    startListening();
+    void prepareLiveConversation();
   }
   async function prepareLiveConversation() {
     const attempt = voiceSetupAttemptRef.current + 1;
@@ -993,14 +1001,16 @@ export function DeathDialogue() {
           {micStatus !== "granted" && micStatus !== "unknown" && <div className={`mic-required ${micStatus === "requesting" ? "is-requesting" : "is-blocked"}`} role="alert">
             <Mic size={22} aria-hidden="true" />
             <div>
-              <strong>{micStatus === "requesting" ? "ALLOW MICROPHONE ACCESS" : micStatus === "denied" ? "MICROPHONE ACCESS BLOCKED" : "NO MICROPHONE FOUND"}</strong>
+              <strong>{micStatus === "requesting" ? "ALLOW MICROPHONE ACCESS" : micStatus === "insecure" ? "SECURE CONNECTION REQUIRED" : micStatus === "denied" ? "MICROPHONE ACCESS BLOCKED" : "NO MICROPHONE FOUND"}</strong>
               <p>{micStatus === "requesting"
                 ? "Your browser is asking for microphone permission. Choose Allow, otherwise the Harbinger cannot hear you in a live conversation."
+                : micStatus === "insecure"
+                  ? "Browsers only allow microphone access on HTTPS (or localhost). Open this site over https:// to talk to the Harbinger, or use text chat."
                 : micStatus === "denied"
                   ? "The Harbinger cannot hear you. Click the lock or microphone icon in your browser's address bar, set Microphone to Allow, then press the button below."
                   : "A working microphone is needed for a live conversation. Connect one, then try again, or switch to text chat."}</p>
             </div>
-            {micStatus !== "requesting" && <button type="button" onClick={() => void allowMicrophone()}><Mic size={15} aria-hidden="true" /> ALLOW MICROPHONE</button>}
+            {micStatus !== "requesting" && micStatus !== "insecure" && <button type="button" onClick={() => void allowMicrophone()}><Mic size={15} aria-hidden="true" /> ALLOW MICROPHONE</button>}
           </div>}
           <p className="live-caption" aria-live="polite"><strong>{messages[messages.length - 1]?.role === "assistant" ? "HARBINGER" : "YOU"}</strong>{messages[messages.length - 1]?.content}</p>
           {pending && <div className="thinking"><span /><span /><span /> Death considers your words.</div>}
